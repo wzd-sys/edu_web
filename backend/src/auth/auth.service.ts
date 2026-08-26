@@ -13,21 +13,23 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findFirst({
-      where: { OR: [{ username: dto.username }, { email: dto.email }] },
-    });
-    if (existing) {
-      throw new ConflictException('用户名或邮箱已存在');
-    }
-
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        username: dto.username,
-        email: dto.email,
-        passwordHash,
-      },
-    });
+
+    let user;
+    try {
+      user = await this.prisma.user.create({
+        data: {
+          username: dto.username,
+          email: dto.email,
+          passwordHash,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('用户名或邮箱已存在');
+      }
+      throw error;
+    }
 
     return {
       token: this.jwt.sign({ sub: user.id, username: user.username }),

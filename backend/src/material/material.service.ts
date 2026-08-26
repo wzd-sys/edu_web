@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -31,7 +31,8 @@ export class MaterialService {
   }
 
   async findAll(query: QueryMaterialDto) {
-    const { page = 1, pageSize = 10, subject, grade, type, keyword } = query;
+    const { page = 1, subject, grade, type, keyword } = query;
+    const pageSize = Math.min(query.pageSize ?? 10, 50);
     const skip = (page - 1) * pageSize;
 
     const where: Record<string, unknown> = {};
@@ -71,11 +72,13 @@ export class MaterialService {
   async remove(id: number, userId: number) {
     const material = await this.prisma.material.findUnique({ where: { id } });
     if (!material) throw new NotFoundException('教材不存在');
-    if (material.uploaderId !== userId) throw new NotFoundException('无权删除');
+    if (material.uploaderId !== userId) throw new ForbiddenException('无权删除');
 
-    await this.prisma.like.deleteMany({ where: { materialId: id } });
-    await this.prisma.userMaterial.deleteMany({ where: { materialId: id } });
-    await this.prisma.material.delete({ where: { id } });
+    await this.prisma.$transaction([
+      this.prisma.like.deleteMany({ where: { materialId: id } }),
+      this.prisma.userMaterial.deleteMany({ where: { materialId: id } }),
+      this.prisma.material.delete({ where: { id } }),
+    ]);
   }
 
   getFilePath(fileUrl: string): string {

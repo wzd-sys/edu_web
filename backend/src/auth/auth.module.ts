@@ -13,10 +13,16 @@ import { PrismaService } from '../common/prisma.service';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get('JWT_SECRET', 'edu-web-jwt-secret'),
-        signOptions: { expiresIn: config.get('JWT_EXPIRES_IN', '24h') },
-      }),
+      useFactory: (config: ConfigService) => {
+        const secret = config.get('JWT_SECRET');
+        if (!secret || secret.length < 16) {
+          throw new Error('JWT_SECRET must be set and at least 16 characters');
+        }
+        return {
+          secret,
+          signOptions: { expiresIn: config.get('JWT_EXPIRES_IN', '24h') },
+        };
+      },
     }),
   ],
   controllers: [AuthController],

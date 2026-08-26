@@ -14,29 +14,35 @@ export class LikeService {
     });
 
     if (existing) {
-      await this.prisma.like.delete({
-        where: { userId_materialId: { userId, materialId } },
-      });
-      await this.prisma.material.update({
-        where: { id: materialId },
-        data: { likeCount: { decrement: 1 } },
-      });
-      return { liked: false, likeCount: Math.max(0, material.likeCount - 1) };
+      const [, updated] = await this.prisma.$transaction([
+        this.prisma.like.delete({
+          where: { userId_materialId: { userId, materialId } },
+        }),
+        this.prisma.material.update({
+          where: { id: materialId },
+          data: { likeCount: { decrement: 1 } },
+        }),
+      ]);
+      return { liked: false, likeCount: Math.max(0, updated.likeCount) };
     }
 
-    await this.prisma.like.create({ data: { userId, materialId } });
-    await this.prisma.material.update({
-      where: { id: materialId },
-      data: { likeCount: { increment: 1 } },
-    });
-    return { liked: true, likeCount: material.likeCount + 1 };
+    const [, updated] = await this.prisma.$transaction([
+      this.prisma.like.create({ data: { userId, materialId } }),
+      this.prisma.material.update({
+        where: { id: materialId },
+        data: { likeCount: { increment: 1 } },
+      }),
+    ]);
+    return { liked: true, likeCount: updated.likeCount };
   }
 
   async getStatus(userId: number, materialId: number) {
-    const like = await this.prisma.like.findUnique({
-      where: { userId_materialId: { userId, materialId } },
-    });
-    const material = await this.prisma.material.findUnique({ where: { id: materialId } });
+    const [like, material] = await Promise.all([
+      this.prisma.like.findUnique({
+        where: { userId_materialId: { userId, materialId } },
+      }),
+      this.prisma.material.findUnique({ where: { id: materialId } }),
+    ]);
     return { liked: !!like, likeCount: material?.likeCount ?? 0 };
   }
 }

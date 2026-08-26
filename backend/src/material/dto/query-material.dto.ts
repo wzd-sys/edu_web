@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, Min } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -15,6 +15,7 @@ export class QueryMaterialDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(50)
   pageSize?: number = 10;
 
   @ApiProperty({ required: false })
