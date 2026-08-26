@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  username     String         @unique @db.VarChar(50)
+  email        String         @unique @db.VarChar(100)
+  passwordHash String         @map("password_hash") @db.VarChar(255)
+  role         String         @default("teacher") @db.VarChar(20)
+  avatar       String?        @db.VarChar(500)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  materials     Material[]
+  likes         Like[]
+  userMaterials UserMaterial[]
+
+  @@map("users")
+}
+
+model Material {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(200)
+  subject     String   @db.VarChar(50)
+  grade       String   @db.VarChar(20)
+  type        String   @db.VarChar(50)
+  description String?  @db.Text
+  fileUrl     String   @map("file_url") @db.VarChar(500)
+  coverUrl    String?  @map("cover_url") @db.VarChar(500)
+  modelUrl    String?  @map("model_url") @db.VarChar(500)
+  likeCount   Int      @default(0) @map("like_count")
+  uploaderId  Int      @map("uploader_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  uploader      User           @relation(fields: [uploaderId], references: [id])
+  likes         Like[]
+  userMaterials UserMaterial[]
+
+  @@map("materials")
+}
+
+model Like {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  materialId Int      @map("material_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  material Material @relation(fields: [materialId], references: [id])
+
+  @@unique([userId, materialId])
+  @@map("likes")
+}
+
+model UserMaterial {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  materialId Int      @map("material_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  material Material @relation(fields: [materialId], references: [id])
+
+  @@unique([userId, materialId])
+  @@map("user_materials")
+}
