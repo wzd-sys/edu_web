@@ -46,7 +46,7 @@
       <el-col :span="6" v-for="m in materials" :key="m.id" style="margin-bottom: 16px;">
         <MaterialCard :material="m" @click="$router.push(`/materials/${m.id}`)">
           <template #actions>
-            <el-button type="danger" size="small" text @click.stop="handleRemove(m.id)">删除</el-button>
+            <el-button type="danger" size="small" text @click.stop="handleRemove(m)">删除</el-button>
           </template>
         </MaterialCard>
       </el-col>
@@ -61,7 +61,10 @@ import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import api from '../api';
 import type { Material } from '../stores/material';
+import { useAuthStore } from '../stores/auth';
 import MaterialCard from '../components/MaterialCard.vue';
+
+const auth = useAuthStore();
 
 const subjects = ['语文', '数学', '英语', '科学', '道德与法治', '音乐', '美术', '体育'];
 const grades = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'];
@@ -123,10 +126,15 @@ async function submitUpload() {
   }
 }
 
-async function handleRemove(id: number) {
+async function handleRemove(m: Material) {
   try {
-    await api.delete(`/user/materials/${id}`);
-    ElMessage.success('已删除');
+    if (auth.user && m.uploaderId === auth.user.id) {
+      await api.delete(`/materials/${m.id}`);
+      ElMessage.success('已删除教材');
+    } else {
+      await api.delete(`/user/materials/${m.id}`);
+      ElMessage.success('已取消收藏');
+    }
     await loadData();
   } catch {
     ElMessage.error('删除失败');
