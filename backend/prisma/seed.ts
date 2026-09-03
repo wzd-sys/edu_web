@@ -31,16 +31,18 @@ async function main() {
   ];
 
   for (const m of sampleMaterials) {
-    await prisma.material.upsert({
-      where: { id: 0 },
-      update: {},
-      create: {
+    const existing = await prisma.material.findFirst({
+      where: { title: m.title, uploaderId: teacher.id },
+    });
+    if (existing) continue;
+    await prisma.material.create({
+      data: {
         ...m,
         fileUrl: `/uploads/sample-${Date.now()}.pdf`,
         likeCount: Math.floor(Math.random() * 50),
         uploaderId: teacher.id,
       },
-    }).catch(() => {});
+    });
   }
 
   console.log('Seed completed successfully');

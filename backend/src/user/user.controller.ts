@@ -21,6 +21,17 @@ export class UserController {
     return this.userService.getMaterials(user.id, Number(page) || 1, Number(pageSize) || 10);
   }
 
+  @Get(':materialId/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '查询收藏状态' })
+  getStatus(
+    @CurrentUser() user: { id: number },
+    @Param('materialId', ParseIntPipe) materialId: number,
+  ) {
+    return this.userService.getStatus(user.id, materialId);
+  }
+
   @Post(':materialId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -78,6 +78,11 @@ onMounted(async () => {
       liked.value = statusRes.data.liked;
       likeCount.value = statusRes.data.likeCount;
     } catch { /* not logged in */ }
+
+    try {
+      const collectRes = await api.get(`/user/materials/${id}/status`);
+      collected.value = collectRes.data.collected;
+    } catch { /* not logged in */ }
   } finally {
     loading.value = false;
   }

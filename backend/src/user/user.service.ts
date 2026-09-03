@@ -28,6 +28,13 @@ export class UserService {
     };
   }
 
+  async getStatus(userId: number, materialId: number) {
+    const record = await this.prisma.userMaterial.findUnique({
+      where: { userId_materialId: { userId, materialId } },
+    });
+    return { collected: !!record };
+  }
+
   async addMaterial(userId: number, materialId: number) {
     const material = await this.prisma.material.findUnique({ where: { id: materialId } });
     if (!material) throw new NotFoundException('教材不存在');
